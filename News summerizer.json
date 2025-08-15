@@ -1,0 +1,178 @@
+{
+  "name": "News summerizer",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0159f605-69cb-43ad-a632-d6f3fb6531a8",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything?q=technology&language=en&pageSize=5&apiKey=87f9ea98f92245929ac7a986ed9e4c4b",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "7b09eee9-d1b8-49d3-a724-0364d2ba94e8",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get articles array from NewsAPI response\nconst articles = $json.articles || [];\n\nreturn articles.map(article => ({\n  json: {\n    title: article.title,\n    description: article.description,\n    url: article.url,\n    source: article.source.name,\n    publishedAt: article.publishedAt\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        0
+      ],
+      "id": "eb4ad6f6-4f50-4be3-a559-988653f44f3c",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a news summarizer. Summarize each article below into a concise single paragraph using plain English. Include the main idea, context, and significance. Do not use bullet points or formatting. Just output one summary paragraph per article.\n\nHere is the article data:\nTitle: {{ $json[\"title\"] }}\nDescription: {{ $json[\"description\"] }}\nSource: {{ $json[\"source\"] }}\nPublished At: {{ $json[\"publishedAt\"] }}\n\nReturn only the summary in one paragraph.\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        592,
+        -176
+      ],
+      "id": "55180682-b8b4-4837-a529-2a79c6d70f47",
+      "name": "Basic LLM Chain",
+      "notes": "Summarize the following news headlines into 5 bullet points:\n{{$json[\"text\"]}}\n"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        608,
+        48
+      ],
+      "id": "4f15d4ca-177f-41a8-a19c-fe79831d1d1c",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "5xbzPgfLv4ridYqr",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "22311a04p7@ece.sreenidhi.edu.in",
+        "subject": "News Summary!",
+        "message": "={{ $json[\"text\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1008,
+        -96
+      ],
+      "id": "ca925d0e-ae4f-4092-b9ea-c5c260d9094b",
+      "name": "Send a message",
+      "webhookId": "12a700bb-4470-44d4-a8bd-4578a8d39b13",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "SdwkdKya2PfLrXZt",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c3401991-a08a-4ae7-8cf5-7716e85130da",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7dd0cd633dd8019eda75719ff40349c0764b18dd4efb3f693ce4a011b5d6e527"
+  },
+  "id": "3Cp7kM71sWqWI7xD",
+  "tags": []
+}
